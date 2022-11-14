@@ -59,7 +59,7 @@ func (r *IpnsResolver) resolveOnceAsync(ctx context.Context, name string, option
 	defer span.End()
 
 	out := make(chan onceResult, 1)
-	log.Debugf("RoutingResolver resolving %s", name)
+	log.Debugf("RoutingResolver resolving %s with options %s", name, options)
 	cancel := func() {}
 
 	if options.DhtTimeout != 0 {
@@ -128,7 +128,7 @@ func (r *IpnsResolver) resolveOnceAsync(ctx context.Context, name string, option
 					}
 				}
 
-				ttl := DefaultResolverCacheTTL
+				ttl := DefaultPublishingCacheTTL
 				if entry.Ttl != nil {
 					ttl = time.Duration(*entry.Ttl)
 				}

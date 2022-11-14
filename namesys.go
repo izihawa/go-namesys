@@ -41,7 +41,6 @@ import (
 // (b) dns domains: resolves using links in DNS TXT records
 //
 // It can only publish to: (a) IPFS routing naming.
-//
 type mpns struct {
 	ds ds.Datastore
 
@@ -131,8 +130,11 @@ func NewNameSystem(r routing.ValueStore, opts ...Option) (NameSystem, error) {
 	return ns, nil
 }
 
-// DefaultResolverCacheTTL defines max ttl of a record placed in namesys cache.
-const DefaultResolverCacheTTL = time.Minute
+// MinimumResolverCacheTTL Defines minimum time for caching
+const MinimumResolverCacheTTL = 5 * time.Minute
+
+// DefaultPublishingCacheTTL defines max ttl of a record placed in namesys cache.
+const DefaultPublishingCacheTTL = time.Minute
 
 // Resolve implements Resolver.
 func (ns *mpns) Resolve(ctx context.Context, name string, options ...opts.ResolveOpt) (path.Path, error) {
@@ -251,8 +253,12 @@ func (ns *mpns) resolveOnceAsync(ctx context.Context, name string, options opts.
 			select {
 			case res, ok := <-resCh:
 				if !ok {
+					ttl := best.ttl
+					if ttl < MinimumResolverCacheTTL {
+						ttl = MinimumResolverCacheTTL
+					}
 					if best != (onceResult{}) {
-						ns.cacheSet(cacheKey, best.value, best.ttl)
+						ns.cacheSet(cacheKey, best.value, ttl)
 					}
 					return
 				}
@@ -308,7 +314,7 @@ func (ns *mpns) PublishWithEOL(ctx context.Context, name ci.PrivKey, value path.
 		span.RecordError(err)
 		return err
 	}
-	ttl := DefaultResolverCacheTTL
+	ttl := DefaultPublishingCacheTTL
 	if setTTL, ok := checkCtxTTL(ctx); ok {
 		ttl = setTTL
 	}

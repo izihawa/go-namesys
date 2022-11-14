@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ipfs/go-path"
+	"github.com/ipfs/go-namesys"
+	path "github.com/ipfs/go-path"
+	nsopt "github.com/ipfs/interface-go-ipfs-core/options/namesys"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-
-	"github.com/ipfs/go-namesys"
 )
 
 // ErrNoNamesys is an explicit error for when an IPFS node doesn't
@@ -19,7 +19,7 @@ var ErrNoNamesys = errors.New(
 	"core/resolve: no Namesys on IpfsNode - can't resolve ipns entry")
 
 // ResolveIPNS resolves /ipns paths
-func ResolveIPNS(ctx context.Context, nsys namesys.NameSystem, p path.Path) (path.Path, error) {
+func ResolveIPNS(ctx context.Context, nsys namesys.NameSystem, p path.Path, options ...nsopt.ResolveOpt) (path.Path, error) {
 	ctx, span := namesys.StartSpan(ctx, "ResolveIPNS", trace.WithAttributes(attribute.String("Path", p.String())))
 	defer span.End()
 	if strings.HasPrefix(p.String(), "/ipns/") {
@@ -41,7 +41,7 @@ func ResolveIPNS(ctx context.Context, nsys namesys.NameSystem, p path.Path) (pat
 			return "", err
 		}
 
-		respath, err := nsys.Resolve(ctx, resolvable.String())
+		respath, err := nsys.Resolve(ctx, resolvable.String(), options...)
 		if err != nil {
 			return "", err
 		}
